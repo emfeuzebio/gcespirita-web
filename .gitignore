@@ -7,8 +7,10 @@ coverage
 .output
 .env
 dist
+dist/
 .DS_Store
 .idea
 .eslintcache
 api-generator/typedoc.json
 **/.DS_Store
+.vite/
