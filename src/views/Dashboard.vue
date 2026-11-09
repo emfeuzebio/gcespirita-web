@@ -7,6 +7,9 @@ import StatsWidget from '@/components/dashboard/StatsWidget.vue';
 </script>
 
 <template>
+    <div class="card">
+        <h2>Deploy automático funcionou</h2>
+    </div>
     <div class="grid grid-cols-12 gap-8">
         <StatsWidget />
 
