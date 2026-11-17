@@ -1,10 +1,38 @@
 <script setup>
 import FloatingConfigurator from '@/components/FloatingConfigurator.vue';
+import { useAuthStore } from '@/stores/auth';
 import { ref } from 'vue';
+import { useRouter } from 'vue-router';
+
+const router = useRouter();
+const auth = useAuthStore();
 
 const email = ref('');
 const password = ref('');
 const checked = ref(false);
+
+const loading = ref(false);
+const errorMessage = ref('');
+const fieldErrors = ref({});
+
+async function onSubmit() {
+    loading.value = true;
+    errorMessage.value = '';
+    fieldErrors.value = {};
+    try {
+        await auth.login({ email: email.value, senha: password.value });
+        if (auth.precisaTrocarSenha) {
+            router.push({ name: 'definirSenha' });
+        } else {
+            router.push({ name: 'dashboard' });
+        }
+    } catch (err) {
+        errorMessage.value = err.message || 'Falha ao entrar.';
+        fieldErrors.value = err.errors || {};
+    } finally {
+        loading.value = false;
+    }
+}
 </script>
 
 <template>
@@ -35,12 +63,20 @@ const checked = ref(false);
                         <span class="text-muted-color font-medium">Sign in to continue</span>
                     </div>
 
-                    <div>
+                    <form @submit.prevent="onSubmit">
+                        <div v-if="errorMessage" class="mb-4 p-3 rounded bg-red-100 text-red-700 text-sm">
+                            {{ errorMessage }}
+                        </div>
+
                         <label for="email1" class="block text-surface-900 dark:text-surface-0 text-xl font-medium mb-2">Email</label>
-                        <InputText id="email1" type="text" placeholder="Email address" class="w-full md:w-[30rem] mb-8" v-model="email" />
+                        <InputText id="email1" type="text" placeholder="Email address" class="w-full md:w-[30rem] mb-1" v-model="email" autocomplete="username" />
+                        <small v-if="fieldErrors.email" class="text-red-500 block mb-4">{{ fieldErrors.email.join(' ') }}</small>
+                        <div v-else class="mb-8"></div>
 
                         <label for="password1" class="block text-surface-900 dark:text-surface-0 font-medium text-xl mb-2">Password</label>
-                        <Password id="password1" v-model="password" placeholder="Password" :toggleMask="true" class="mb-4" fluid :feedback="false"></Password>
+                        <Password id="password1" v-model="password" placeholder="Password" :toggleMask="true" class="mb-1" fluid :feedback="false" inputClass="w-full" autocomplete="current-password" />
+                        <small v-if="fieldErrors.senha" class="text-red-500 block mb-4">{{ fieldErrors.senha.join(' ') }}</small>
+                        <div v-else class="mb-4"></div>
 
                         <div class="flex items-center justify-between mt-2 mb-8 gap-8">
                             <div class="flex items-center">
@@ -49,8 +85,9 @@ const checked = ref(false);
                             </div>
                             <span class="font-medium no-underline ml-2 text-right cursor-pointer text-primary">Forgot password?</span>
                         </div>
-                        <Button label="Sign In" class="w-full" as="router-link" to="/"></Button>
-                    </div>
+
+                        <Button type="submit" label="Sign In" class="w-full" :loading="loading"></Button>
+                    </form>
                 </div>
             </div>
         </div>

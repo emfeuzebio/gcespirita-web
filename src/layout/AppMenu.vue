@@ -13,6 +13,64 @@ const model = ref([
             }
         ]
     },
+    // Exemplo de estrutura dentro do modelo do seu AppMenu.vue
+    {
+        label: 'Administração',
+        items: [
+            {
+                label: 'Organizações',
+                icon: 'pi pi-fw pi-building',
+                to: '/organizacoes'
+            },
+            // ... outros itens de menu se houver
+            {
+                label: 'Anos de Exercício',
+                icon: 'pi pi-fw pi-calendar',
+                to: '/ano-exercicios'
+            }
+        ]
+    },
+    {
+        label: 'Controle de Acessos (ACL)',
+        icon: 'pi pi-fw pi-shield',
+        items: [
+            {
+                label: 'Usuários',
+                icon: 'pi pi-fw pi-users',
+                to: '/acl/usuarios'
+            },
+            {
+                label: 'Entidades & Ações',
+                icon: 'pi pi-fw pi-box',
+                to: '/acl/entidades'
+            },
+            {
+                label: 'Perfis',
+                icon: 'pi pi-fw pi-shield',
+                to: '/acl/perfis'
+            },            
+            {
+                label: 'Módulos',
+                icon: 'pi pi-fw pi-th-large',
+                to: '/acl/modulos'
+            }
+        ]
+    },
+    {
+        label: 'Cadastros',
+        items: [
+            {
+                label: 'Escolaridades',
+                icon: 'pi pi-fw pi-book',
+                to: '/escolaridades'
+            },
+            {
+                label: 'Equipes',
+                icon: 'pi pi-fw pi-users',
+                to: '/equipes'
+            }            
+        ]
+    },
     {
         label: 'UI Components',
         path: '/uikit',

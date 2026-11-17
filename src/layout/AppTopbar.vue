@@ -1,8 +1,43 @@
 <script setup>
 import { useLayout } from '@/layout/composables/layout';
+import { useAuthStore } from '@/stores/auth';
+import { useTenantStore } from '@/stores/tenant';
+import { computed, ref } from 'vue';
+import { useRouter } from 'vue-router';
 import AppConfigurator from './AppConfigurator.vue';
 
 const { toggleMenu, toggleDarkMode, isDarkTheme } = useLayout();
+
+const router = useRouter();
+const auth = useAuthStore();
+const tenantStore = useTenantStore();
+
+const userMenu = ref();
+
+const userMenuItems = ref([
+    {
+        label: 'Sair',
+        icon: 'pi pi-sign-out',
+        command: async () => {
+            await auth.logout();
+            tenantStore.reset();
+            router.push({ name: 'login' });
+        },
+    },
+]);
+
+function toggleUserMenu(event) {
+    userMenu.value.toggle(event);
+}
+
+const selectedTenant = computed({
+    get: () => tenantStore.ativoId,
+    set: (id) => {
+        if (id && tenantStore.trocarPorId(id)) {
+            window.location.reload();
+        }
+    },
+});
 </script>
 
 <template>
@@ -34,6 +69,31 @@ const { toggleMenu, toggleDarkMode, isDarkTheme } = useLayout();
             </router-link>
         </div>
 
+        <div v-if="tenantStore.lista.length > 0" class="hidden md:flex items-center gap-2 mx-4">
+            <i class="pi pi-building text-surface-500" title="Organização Ativa"></i>
+            <Select
+                v-model="selectedTenant"
+                :options="tenantStore.lista"
+                optionLabel="nome"
+                optionValue="id"
+                placeholder="Selecione a Organização"
+                class="w-72 text-sm"
+            >
+                <template #value="slotProps">
+                    <div v-if="slotProps.value" class="flex items-center gap-2">
+                        <span class="font-semibold text-primary">{{ tenantStore.ativo?.sigla }}</span>
+                        <span class="text-surface-600 dark:text-surface-300 text-xs truncate max-w-[180px]">- {{ tenantStore.ativo?.nome }}</span>
+                    </div>
+                    <span v-else>{{ slotProps.placeholder }}</span>
+                </template>
+                <template #option="slotProps">
+                    <div class="flex flex-col py-1">
+                        <span class="font-medium text-sm">{{ slotProps.option.sigla }} - {{ slotProps.option.nome }}</span>
+                    </div>
+                </template>
+            </Select>
+        </div>
+
         <div class="layout-topbar-actions">
             <div class="layout-config-menu">
                 <button type="button" class="layout-topbar-action" @click="toggleDarkMode">
@@ -60,18 +120,12 @@ const { toggleMenu, toggleDarkMode, isDarkTheme } = useLayout();
 
             <div class="layout-topbar-menu hidden lg:block">
                 <div class="layout-topbar-menu-content">
-                    <button type="button" class="layout-topbar-action">
-                        <i class="pi pi-calendar"></i>
-                        <span>Calendar</span>
-                    </button>
-                    <button type="button" class="layout-topbar-action">
-                        <i class="pi pi-inbox"></i>
-                        <span>Messages</span>
-                    </button>
-                    <button type="button" class="layout-topbar-action">
+                    <button type="button" class="layout-topbar-action" @click="toggleUserMenu">
                         <i class="pi pi-user"></i>
-                        <span>Profile</span>
+                        <span>{{ auth.usuario?.nome ?? 'Usuário' }}</span>
+                        <i class="pi pi-angle-down text-xs"></i>
                     </button>
+                    <Menu ref="userMenu" :model="userMenuItems" :popup="true" />
                 </div>
             </div>
         </div>

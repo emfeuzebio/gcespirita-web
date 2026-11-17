@@ -1,4 +1,5 @@
 import AppLayout from '@/layout/AppLayout.vue';
+import { useAuthStore } from '@/stores/auth';
 import { createRouter, createWebHistory } from 'vue-router';
 
 const router = createRouter({
@@ -9,10 +10,52 @@ const router = createRouter({
             component: AppLayout,
             children: [
                 {
-                    path: '/',
+                    path: '',
                     name: 'dashboard',
                     component: () => import('@/views/Dashboard.vue')
                 },
+                {
+                    path: '/organizacoes',
+                    name: 'organizacoes',
+                    component: () => import('@/views/pages/Organizacoes/OrganizacaoList.vue')
+                },    
+                {
+                    path: '/ano-exercicios',
+                    name: 'ano-exercicios',
+                    component: () => import('@/views/pages/AnoExercicios/AnoExercicioList.vue')
+                },   
+                {
+                    path: '/escolaridades',
+                    name: 'escolaridades',
+                    component: () => import('@/views/pages/Escolaridades/EscolaridadeList.vue')
+                },
+                {
+                    path: '/equipes',
+                    name: 'equipes',
+                    component: () => import('@/views/pages/Equipes/EquipeList.vue')
+                },
+                // --- Módulos de Controle de Acesso (ACL) ---
+                {
+                    path: '/acl/usuarios',
+                    name: 'acl-usuarios',
+                    component: () => import('@/views/pages/Usuarios/UsuarioList.vue')
+                },  
+                {
+                    path: '/acl/entidades',
+                    name: 'acl-entidades',
+                    component: () => import('@/views/pages/Entidades/EntidadeList.vue')
+                },                              
+                {
+                    path: '/acl/perfis',
+                    name: 'acl-perfis',
+                    component: () => import('@/views/pages/Perfis/PerfilList.vue')
+                },
+                {
+                    path: '/acl/modulos',
+                    name: 'acl-modulos',
+                    component: () => import('@/views/pages/Modulos/ModuloList.vue')
+                },
+                // --- UI Kit & Blocks ---
                 {
                     path: '/uikit/formlayout',
                     name: 'formlayout',
@@ -48,7 +91,6 @@ const router = createRouter({
                     name: 'panel',
                     component: () => import('@/views/uikit/PanelsDoc.vue')
                 },
-
                 {
                     path: '/uikit/overlay',
                     name: 'overlay',
@@ -124,23 +166,56 @@ const router = createRouter({
             name: 'notfound',
             component: () => import('@/views/pages/NotFound.vue')
         },
-
         {
             path: '/auth/login',
             name: 'login',
-            component: () => import('@/views/pages/auth/Login.vue')
+            component: () => import('@/views/pages/auth/Login.vue'),
+            meta: { public: true }
+        },
+        {
+            path: '/auth/definir-senha',
+            name: 'definirSenha',
+            component: () => import('@/views/pages/auth/DefinirSenha.vue'),
+            meta: { public: true }
         },
         {
             path: '/auth/access',
             name: 'accessDenied',
-            component: () => import('@/views/pages/auth/Access.vue')
+            component: () => import('@/views/pages/auth/Access.vue'),
+            meta: { public: true }
         },
         {
             path: '/auth/error',
             name: 'error',
-            component: () => import('@/views/pages/auth/Error.vue')
+            component: () => import('@/views/pages/auth/Error.vue'),
+            meta: { public: true }
         }
     ]
+});
+
+router.beforeEach(async (to) => {
+    const auth = useAuthStore();
+
+    if (!auth.loaded) {
+        try {
+            await auth.fetchMe();
+        } catch {
+            /* sem sessão */
+        }
+    }
+
+    if (to.meta.public) {
+        if (auth.isAuthenticated && to.name === 'login') return { name: 'dashboard' };
+        return true;
+    }
+
+    if (!auth.isAuthenticated) return { name: 'login' };
+
+    if (auth.precisaTrocarSenha && to.name !== 'definirSenha') {
+        return { name: 'definirSenha' };
+    }
+
+    return true;
 });
 
 export default router;
