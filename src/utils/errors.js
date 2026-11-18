@@ -1,4 +1,7 @@
 import { resetCsrf } from '@/api/csrf';
+import router from '@/router';
+import { useAuthStore } from '@/stores/auth';
+import { useTenantStore } from '@/stores/tenant';
 import { normalizeEnvelope } from './envelope';
 
 /**
@@ -15,6 +18,31 @@ export function handleHttpError(error) {
   // Sessão expirada ou CSRF inválido: força rebuscar o cookie na próxima req.
   if (status === 401 || status === 419) {
     resetCsrf();
+  }
+
+  // Tratamento específico para 401 (Sessão Expirada)
+  if (status === 401) {
+    // Limpa estado do auth e tenant
+    const authStore = useAuthStore();
+    const tenantStore = useTenantStore();
+
+    authStore.usuario = null;
+    authStore.organizacao = null;
+    authStore.organizacoesAcessiveis = [];
+    authStore.loaded = true;
+    tenantStore.reset();
+
+    // Redireciona para o login salvando a rota atual de origem e avisando que expirou
+    const currentRoute = router.currentRoute.value;
+    if (currentRoute.name !== 'login') {
+      router.push({
+        path: '/auth/login',
+        query: { 
+          expired: '1', 
+          redirect: currentRoute.fullPath !== '/' ? currentRoute.fullPath : undefined 
+        }
+      });
+    }
   }
 
   const messageByStatus = {

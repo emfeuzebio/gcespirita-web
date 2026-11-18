@@ -1,10 +1,11 @@
 <script setup>
 import FloatingConfigurator from '@/components/FloatingConfigurator.vue';
 import { useAuthStore } from '@/stores/auth';
-import { ref } from 'vue';
-import { useRouter } from 'vue-router';
+import { onMounted, ref } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 
 const router = useRouter();
+const route = useRoute();
 const auth = useAuthStore();
 
 const email = ref('');
@@ -15,14 +16,27 @@ const loading = ref(false);
 const errorMessage = ref('');
 const fieldErrors = ref({});
 
+// Verifica se o usuário chegou aqui porque a sessão expirou
+onMounted(() => {
+    if (route.query.expired === '1') {
+        errorMessage.value = 'Sua sessão expirou. Faça login novamente para continuar.';
+    }
+});
+
 async function onSubmit() {
     loading.value = true;
     errorMessage.value = '';
     fieldErrors.value = {};
     try {
         await auth.login({ email: email.value, senha: password.value });
+        
+        // Se houver uma URL de redirect guardada, redireciona para ela; senão, vai para o dashboard ou troca de senha
+        const redirectPath = route.query.redirect;
+
         if (auth.precisaTrocarSenha) {
             router.push({ name: 'definirSenha' });
+        } else if (redirectPath) {
+            router.push(redirectPath);
         } else {
             router.push({ name: 'dashboard' });
         }
@@ -59,8 +73,8 @@ async function onSubmit() {
                                 />
                             </g>
                         </svg>
-                        <div class="text-surface-900 dark:text-surface-0 text-3xl font-medium mb-4">Welcome to PrimeLand!</div>
-                        <span class="text-muted-color font-medium">Sign in to continue</span>
+                        <div class="text-surface-900 dark:text-surface-0 text-3xl font-medium mb-4">Bem-vindo(a)!</div>
+                        <span class="text-muted-color font-medium">Faça login para continuar</span>
                     </div>
 
                     <form @submit.prevent="onSubmit">
@@ -68,25 +82,25 @@ async function onSubmit() {
                             {{ errorMessage }}
                         </div>
 
-                        <label for="email1" class="block text-surface-900 dark:text-surface-0 text-xl font-medium mb-2">Email</label>
-                        <InputText id="email1" type="text" placeholder="Email address" class="w-full md:w-[30rem] mb-1" v-model="email" autocomplete="username" />
+                        <label for="email1" class="block text-surface-900 dark:text-surface-0 text-xl font-medium mb-2">E-mail</label>
+                        <InputText id="email1" type="text" placeholder="Endereço de e-mail" class="w-full md:w-[30rem] mb-1" v-model="email" autocomplete="username" />
                         <small v-if="fieldErrors.email" class="text-red-500 block mb-4">{{ fieldErrors.email.join(' ') }}</small>
                         <div v-else class="mb-8"></div>
 
-                        <label for="password1" class="block text-surface-900 dark:text-surface-0 font-medium text-xl mb-2">Password</label>
-                        <Password id="password1" v-model="password" placeholder="Password" :toggleMask="true" class="mb-1" fluid :feedback="false" inputClass="w-full" autocomplete="current-password" />
+                        <label for="password1" class="block text-surface-900 dark:text-surface-0 font-medium text-xl mb-2">Senha</label>
+                        <Password id="password1" v-model="password" placeholder="Sua senha" :toggleMask="true" class="mb-1" fluid :feedback="false" inputClass="w-full" autocomplete="current-password" />
                         <small v-if="fieldErrors.senha" class="text-red-500 block mb-4">{{ fieldErrors.senha.join(' ') }}</small>
                         <div v-else class="mb-4"></div>
 
                         <div class="flex items-center justify-between mt-2 mb-8 gap-8">
                             <div class="flex items-center">
                                 <Checkbox v-model="checked" id="rememberme1" binary class="mr-2"></Checkbox>
-                                <label for="rememberme1">Remember me</label>
+                                <label for="rememberme1">Lembrar de mim</label>
                             </div>
-                            <span class="font-medium no-underline ml-2 text-right cursor-pointer text-primary">Forgot password?</span>
+                            <span class="font-medium no-underline ml-2 text-right cursor-pointer text-primary">Esqueceu a senha?</span>
                         </div>
 
-                        <Button type="submit" label="Sign In" class="w-full" :loading="loading"></Button>
+                        <Button type="submit" label="Entrar" class="w-full" :loading="loading"></Button>
                     </form>
                 </div>
             </div>
