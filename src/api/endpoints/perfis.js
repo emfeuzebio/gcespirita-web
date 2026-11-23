@@ -1,8 +1,8 @@
 import { http } from '@/api/http';
 
 export const perfisApi = {
-  list() {
-    return http.get('/acl/perfis');
+  list(params = {}) {
+    return http.get('/acl/perfis', { params }); // <- Repassando os parâmetros de query string aqui
   },
   get(id) {
     return http.get(`/acl/perfis/${id}`);
@@ -15,5 +15,13 @@ export const perfisApi = {
   },
   remove(id) {
     return http.delete(`/acl/perfis/${id}`);
+  },
+
+  carregarAutorizacoes(perfilId) {
+    return http.get(`/acl/perfis/${perfilId}/autorizacoes`);
+  },
+
+  atualizarAutorizacao(perfilId, acaoId, ativo) {
+    return http.put(`/acl/perfis/${perfilId}/autorizacoes/${acaoId}`, { ativo });
   },
 };

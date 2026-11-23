@@ -3,7 +3,7 @@ import { usuariosApi } from '@/api/endpoints/usuarios';
 import { getTenantId } from '@/api/tenant-context'; // Ajuste o caminho exato se estiver na raiz da pasta api
 import { useConfirm } from 'primevue/useconfirm';
 import { useToast } from 'primevue/usetoast';
-import { onMounted, ref } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import UsuarioForm from './UsuarioForm.vue';
 import UsuarioPerfisModal from './UsuarioPerfisModal.vue';
 
@@ -19,6 +19,11 @@ const editando = ref(null);
 const perfisModalVisible = ref(false);
 const usuarioPerfisSelecionado = ref(null);
 
+// Paginação reativa (inicia em 5 registros por página; 999999 cobre "Todos")
+const first = ref(0);
+const rows = ref(5);
+const rowsPerPageOptions = [5, 10, 25, 50, 100, 999999];
+
 // Filtro de status inicial padrão no servidor: 'SIM'
 const filtroStatus = ref('SIM');
 
@@ -26,12 +31,54 @@ const filters = ref({
   global: { value: null, matchMode: 'contains' }
 });
 
+const globalFilterFields = ['nome', 'email', 'organizacao.sigla'];
+
+function obterValorPorCaminho(objeto, caminho) {
+  return caminho.split('.').reduce((acc, chave) => acc?.[chave], objeto);
+}
+
+// Total considerando o filtro global ativo (incluindo campos aninhados)
+const totalRegistros = computed(() => {
+  const termo = String(filters.value?.global?.value ?? '').trim().toLowerCase();
+
+  if (!termo) {
+    return itens.value.length;
+  }
+
+  return itens.value.filter((item) =>
+    globalFilterFields.some((campo) =>
+      String(obterValorPorCaminho(item, campo) ?? '').toLowerCase().includes(termo)
+    )
+  ).length;
+});
+
+const contadorPaginacao = computed(() => {
+  const total = totalRegistros.value;
+
+  if (total <= 0) {
+    return { inicio: 0, fim: 0, total: 0 };
+  }
+
+  const inicio = Math.min(first.value + 1, total);
+  const fim = Math.min(first.value + rows.value, total);
+
+  return { inicio, fim, total };
+});
+
+// Volta para a primeira página ao digitar na busca global
+watch(
+  () => filters.value?.global?.value,
+  () => {
+    first.value = 0;
+  }
+);
+
 async function carregar() {
   loading.value = true;
   try {
     const params = {};
     if (filtroStatus.value) params.ativo = filtroStatus.value;
-    
+
     // Pega o ID do tenant ativo no contexto global
     const tenantId = getTenantId();
     if (tenantId) {
@@ -40,6 +87,7 @@ async function carregar() {
 
     const res = await usuariosApi.list(params);
     itens.value = res.data ?? [];
+    first.value = 0;
   } catch (err) {
     toast.add({ severity: 'error', summary: 'Erro', detail: err.message, life: 4000 });
   } finally {
@@ -97,34 +145,35 @@ onMounted(carregar);
         <h2 class="text-2xl font-medium">Usuários do Sistema</h2>
         <span class="text-sm text-surface-500">Gerenciamento de contas, acessos e perfis</span>
       </div>
-      
+
       <div class="flex flex-wrap items-center gap-2">
-        <Select 
-          v-model="filtroStatus" 
+        <Select
+          v-model="filtroStatus"
           @update:modelValue="carregar"
           :options="[
             { label: 'Apenas Ativos', value: 'SIM' },
             { label: 'Apenas Inativos', value: 'NAO' },
             { label: 'Todos os Status', value: null }
-          ]" 
-          optionLabel="label" 
-          optionValue="value" 
-          placeholder="Filtrar por Status" 
+          ]"
+          optionLabel="label"
+          optionValue="value"
+          placeholder="Filtrar por Status"
           class="w-44"
+          v-tooltip.top="'Filtrar por Ativo'"
         />
 
-        <Button 
-          icon="pi pi-refresh" 
-          severity="secondary" 
-          outlined 
-          @click="carregar" 
-          :loading="loading" 
-          v-tooltip.top="'Recarregar dados'" 
+        <Button
+          icon="pi pi-refresh"
+          severity="secondary"
+          outlined
+          @click="carregar"
+          :loading="loading"
+          v-tooltip.top="'Recarregar dados'"
         />
-        <Button 
-          label="Novo Usuário" 
-          icon="pi pi-plus" 
-          @click="novo" 
+        <Button
+          label="Novo Usuário"
+          icon="pi pi-plus"
+          @click="novo"
           v-tooltip.top="'Inserir Novo Registro'"
         />
       </div>
@@ -134,13 +183,26 @@ onMounted(carregar);
       :value="itens"
       :loading="loading"
       v-model:filters="filters"
-      :globalFilterFields="['nome', 'email', 'organizacao.sigla']"
+      :globalFilterFields="globalFilterFields"
       dataKey="id"
       paginator
-      :rows="10"
-      :rowsPerPageOptions="[10, 25, 50]"
+      v-model:first="first"
+      v-model:rows="rows"
+      :rowsPerPageOptions="rowsPerPageOptions"
       responsiveLayout="scroll"
     >
+      <template #paginatorstart>
+        <span class="text-sm text-surface-500">
+          Mostrando de
+          <span class="font-semibold">{{ contadorPaginacao.inicio }}</span>
+          até
+          <span class="font-semibold">{{ contadorPaginacao.fim }}</span>
+          de
+          <span class="font-semibold">{{ contadorPaginacao.total }}</span>
+          registros
+        </span>
+      </template>
+
       <template #header>
         <div class="flex justify-end">
           <InputText v-model="filters['global'].value" placeholder="Pesquisar..." />
@@ -151,26 +213,26 @@ onMounted(carregar);
         <div class="text-center py-6 text-muted-color">Nenhum usuário encontrado para o filtro selecionado.</div>
       </template>
 
-      <Column field="id" header="ID" sortable style="width: 5rem" />
-      <Column field="nome" header="Nome" sortable />
+      <Column field="id" header="ID" sortable style="width: 2rem" />
+      <Column field="nome" header="Nome" sortable style="width: 18rem" />
       <Column field="email" header="E-mail" sortable />
-      
-      <Column header="Organização" sortable sortField="organizacao.sigla" style="width: 11rem">
+
+      <Column header="Org." sortable sortField="organizacao.sigla" style="width: 3rem">
         <template #body="{ data }">
           <span class="font-semibold">{{ data.organizacao?.sigla ?? data.organizacao_id }}</span>
         </template>
       </Column>
 
       <!-- Coluna Perfis com Badges Empilhados -->
-      <Column header="Perfis" style="width: 14rem">
+      <Column header="Perfis" style="width: 8rem">
         <template #body="{ data }">
           <div class="flex flex-wrap gap-1">
             <template v-if="data.perfis && data.perfis.length > 0">
-              <Tag 
-                v-for="perfil in data.perfis" 
-                :key="perfil.id" 
-                :value="perfil.sigla" 
-                severity="info" 
+              <Tag
+                v-for="perfil in data.perfis"
+                :key="perfil.id"
+                :value="perfil.sigla"
+                severity="info"
                 v-tooltip.top="perfil.descricao"
               />
             </template>
@@ -179,13 +241,13 @@ onMounted(carregar);
         </template>
       </Column>
 
-      <Column field="ativo" header="Ativo" sortable style="width: 7rem">
+      <Column field="ativo" header="Ativo" sortable style="width: 4rem">
         <template #body="{ data }">
           <Tag :severity="data.ativo === 'SIM' ? 'success' : 'danger'" :value="data.ativo" />
         </template>
       </Column>
 
-      <Column header="Ações" style="width: 12rem" :exportable="false">
+      <Column header="Ações" style="width: 10rem" :exportable="false">
         <template #body="{ data }">
           <Button icon="pi pi-shield" severity="info" text rounded @click="gerenciarPerfis(data)" v-tooltip.top="'Gerenciar Perfis (ACL)'" />
           <Button icon="pi pi-pencil" severity="secondary" text rounded @click="editar(data)" v-tooltip.top="'Editar o Registro'" />
@@ -195,10 +257,10 @@ onMounted(carregar);
     </DataTable>
 
     <UsuarioForm v-model:visible="formVisible" :usuario="editando" @salvo="onSalvo" />
-    <UsuarioPerfisModal 
-      v-model:visible="perfisModalVisible" 
-      :usuario="usuarioPerfisSelecionado" 
-      @atualizado="carregar" 
+    <UsuarioPerfisModal
+      v-model:visible="perfisModalVisible"
+      :usuario="usuarioPerfisSelecionado"
+      @atualizado="carregar"
     />
     <ConfirmDialog />
   </div>

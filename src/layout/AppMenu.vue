@@ -18,11 +18,15 @@ const model = ref([
         label: 'Administração',
         items: [
             {
-                label: 'Organizações',
+                label: 'Módulos do Sistema',
+                icon: 'pi pi-fw pi-th-large',
+                to: '/acl/modulos'
+            },
+            {
+                label: 'Organizações & Módulos',
                 icon: 'pi pi-fw pi-building',
                 to: '/organizacoes'
             },
-            // ... outros itens de menu se houver
             {
                 label: 'Anos de Exercício',
                 icon: 'pi pi-fw pi-calendar',
@@ -35,9 +39,14 @@ const model = ref([
         icon: 'pi pi-fw pi-shield',
         items: [
             {
-                label: 'Usuários',
+                label: 'Usuários & Perfis',
                 icon: 'pi pi-fw pi-users',
                 to: '/acl/usuarios'
+            },
+            {
+                label: 'Perfis & Autorizações',
+                icon: 'pi pi-fw pi-shield',
+                to: '/acl/perfis'
             },
             {
                 label: 'Entidades & Ações',
@@ -45,14 +54,9 @@ const model = ref([
                 to: '/acl/entidades'
             },
             {
-                label: 'Perfis',
-                icon: 'pi pi-fw pi-shield',
-                to: '/acl/perfis'
-            },            
-            {
-                label: 'Módulos',
-                icon: 'pi pi-fw pi-th-large',
-                to: '/acl/modulos'
+                label: 'Menus por Perfis',
+                icon: 'pi pi-fw pi-bars',
+                to: '/menus'
             }
         ]
     },

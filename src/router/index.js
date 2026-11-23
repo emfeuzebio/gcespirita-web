@@ -55,6 +55,13 @@ const router = createRouter({
                     name: 'acl-modulos',
                     component: () => import('@/views/pages/Modulos/ModuloList.vue')
                 },
+                {
+                    path: '/menus',
+                    name: 'menus',
+                    // component: () => import('@/views/pages/Menus/MenuTreeView.vue')
+                    component: () => import('@/views/pages/Menus/MenuTabs.vue')
+
+                },             
                 // --- UI Kit & Blocks ---
                 {
                     path: '/uikit/formlayout',

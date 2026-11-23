@@ -8,15 +8,27 @@ const API_ORIGIN = import.meta.env.VITE_API_BASE_URL;
 const API_PREFIX = import.meta.env.VITE_API_PREFIX;
 
 // Rotas tenant-scoped (Doc 1, seção 5). Só essas levam X-Tenant.
-const TENANT_SCOPED_PREFIXES = [
-  '/equipes',
-  '/servicos',
-  '/voluntarios',
-  '/acl/organizacoes/',
-];
+// Padrão: prefixo fixo OU regex que extrai orgId da URL.
+const TENANT_SCOPED_PREFIXES = ['/equipes', '/servicos', '/voluntarios'];
 
-function isTenantScoped(url = '') {
-  return TENANT_SCOPED_PREFIXES.some((p) => url.startsWith(p));
+// Regex para rotas que embutem o orgId no path (ex.: /acl/organizacoes/7/modulos).
+// Essas rotas usam o orgId da URL como X-Tenant — não o tenant ativo do store.
+const TENANT_FROM_PATH_REGEX = /^\/acl\/organizacoes\/(\d+)\//;
+
+function resolveTenantHeader(url = '') {
+  // 1) Se a URL embute orgId, ele manda (fonte da verdade é o path).
+  const match = url.match(TENANT_FROM_PATH_REGEX);
+  if (match) {
+    return String(match[1]);
+  }
+
+  // 2) Rotas tenant-scoped "clássicas" usam o tenant do store.
+  if (TENANT_SCOPED_PREFIXES.some((p) => url.startsWith(p))) {
+    return getTenantHeader();
+  }
+
+  // 3) Demais rotas são globais — sem X-Tenant.
+  return null;
 }
 
 export const http = axios.create({
@@ -37,11 +49,9 @@ http.interceptors.request.use(async (config) => {
     config.headers['X-XSRF-TOKEN'] = getXsrfToken();
   }
 
-  if (isTenantScoped(config.url)) {
-    const tenantHeader = getTenantHeader();
-    if (tenantHeader) {
-      config.headers['X-Tenant'] = tenantHeader;
-    }
+  const tenantHeader = resolveTenantHeader(config.url);
+  if (tenantHeader) {
+    config.headers['X-Tenant'] = tenantHeader;
   }
 
   return config;

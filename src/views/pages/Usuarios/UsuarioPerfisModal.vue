@@ -3,6 +3,9 @@ import { usuariosApi } from '@/api/endpoints/usuarios';
 import { useToast } from 'primevue/usetoast';
 import { computed, ref, watch } from 'vue';
 
+const PERFIL_MASTER_ID = 1;
+const USUARIO_SUPER_ADMIN_ID = 1;
+
 const props = defineProps({
   visible: Boolean,
   usuario: Object,
@@ -18,10 +21,22 @@ const todosPerfis = ref([]);
 const perfisDoUsuario = ref([]);
 const perfilSelecionadoId = ref(null);
 
+const isSuperAdmin = computed(() => Number(props.usuario?.id) === USUARIO_SUPER_ADMIN_ID);
+
+// Retira o perfil ID 1 (Administrador MASTER) da lista de perfis que podem ser concedidos
 const perfisDisponiveis = computed(() => {
   const idsVinculados = new Set(perfisDoUsuario.value.map((p) => p.id));
-  return todosPerfis.value.filter((p) => p.ativo === 'SIM' && !idsVinculados.has(p.id));
+  return todosPerfis.value.filter(
+    (p) =>
+      p.ativo === 'SIM' &&
+      Number(p.id) !== PERFIL_MASTER_ID &&
+      !idsVinculados.has(p.id)
+  );
 });
+
+function isPerfilProtegido(perfil) {
+  return Number(perfil?.id) === PERFIL_MASTER_ID;
+}
 
 watch(
   () => props.visible,
@@ -52,16 +67,26 @@ async function carregarDados() {
 
 async function adicionarPerfil() {
   if (!perfilSelecionadoId.value) return;
+
+  if (Number(perfilSelecionadoId.value) === PERFIL_MASTER_ID) {
+    toast.add({
+      severity: 'warn',
+      summary: 'Perfil exclusivo',
+      detail: 'O perfil Administrador MASTER (ID 1) é exclusivo e não pode ser concedido.',
+      life: 3500,
+    });
+    return;
+  }
+
   salvando.value = true;
   try {
-    // Pega os IDs que o usuário já tem e adiciona o novo ID selecionado
-    const idsAtuais = perfisDoUsuario.value.map(p => p.id);
+    const idsAtuais = perfisDoUsuario.value.map((p) => p.id);
     const todosOsIds = [...idsAtuais, perfilSelecionadoId.value];
 
-    await usuariosApi.vincularPerfis(props.usuario.id, { 
-      perfil_ids: todosOsIds 
+    await usuariosApi.vincularPerfis(props.usuario.id, {
+      perfil_ids: todosOsIds,
     });
-    
+
     toast.add({ severity: 'success', summary: 'Sucesso', detail: 'Perfil vinculado ao usuário.', life: 3000 });
     perfilSelecionadoId.value = null;
     await carregarDados();
@@ -74,11 +99,22 @@ async function adicionarPerfil() {
 }
 
 async function removerPerfil(perfil) {
+  if (isPerfilProtegido(perfil)) {
+    toast.add({
+      severity: 'warn',
+      summary: 'Ação bloqueada',
+      detail: isSuperAdmin.value
+        ? 'O perfil Administrador MASTER não pode ser removido do SuperAdmin.'
+        : 'O perfil Administrador MASTER é protegido e não pode ser alterado por aqui.',
+      life: 3500,
+    });
+    return;
+  }
+
   salvando.value = true;
   try {
-    // Passa o ID do usuário e o ID do perfil individual para a rota DELETE
     await usuariosApi.desvincularPerfil(props.usuario.id, perfil.id);
-    
+
     toast.add({ severity: 'success', summary: 'Removido', detail: `Perfil ${perfil.sigla} desvinculado.`, life: 3000 });
     await carregarDados();
     emit('atualizado');
@@ -103,6 +139,16 @@ function fechar() {
     class="w-full max-w-2xl"
   >
     <div class="flex flex-col gap-4">
+      <div
+        v-if="isSuperAdmin"
+        class="p-3 rounded-lg bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-700 text-amber-800 dark:text-amber-200 text-sm flex items-center gap-2"
+      >
+        <i class="pi pi-shield text-base" />
+        <span>
+          Usuário <strong>SuperAdmin (ID 1)</strong>: o perfil <strong>Administrador MASTER (ID 1)</strong> é exclusivo e não pode ser concedido a outros usuários nem removido.
+        </span>
+      </div>
+
       <div class="flex flex-col sm:flex-row gap-2 p-3 bg-surface-50 dark:bg-surface-800 rounded-lg border border-surface-200 dark:border-surface-700">
         <Select
           v-model="perfilSelecionadoId"
@@ -158,9 +204,9 @@ function fechar() {
               text
               rounded
               size="small"
-              :disabled="salvando"
+              :disabled="salvando || isPerfilProtegido(data)"
               @click="removerPerfil(data)"
-              v-tooltip.top="'Desvincular Perfil'"
+              v-tooltip.top="isPerfilProtegido(data) ? 'Perfil MASTER protegido' : 'Desvincular Perfil'"
             />
           </template>
         </Column>

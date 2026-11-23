@@ -72,7 +72,8 @@ onMounted(carregar);
     <div class="flex items-center justify-between mb-4">
       <div>
         <h2 class="text-2xl font-medium">Anos de Exercício</h2>
-        <span class="text-sm text-surface-500">Gerenciamento de exercícios fiscais/anuais</span>
+        <span class="text-sm text-surface-500">Gerenciamento de exercícios fiscais/anuais</span><br/>
+        <span class="text-sm text-surface-800">Os registros são criados automaticamente pelo sistema</span>
       </div>
       <Button label="Novo Ano" icon="pi pi-plus" @click="novo" />
     </div>
