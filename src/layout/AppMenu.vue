@@ -57,6 +57,11 @@ const model = ref([
                 label: 'Menus por Perfis',
                 icon: 'pi pi-fw pi-bars',
                 to: '/menus'
+            },
+            {
+                label: 'Auditoria',
+                icon: 'pi pi-fw pi-eye',
+                to: '/acl/audit'
             }
         ]
     },

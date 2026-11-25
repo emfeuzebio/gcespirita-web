@@ -51,6 +51,11 @@ const router = createRouter({
                     component: () => import('@/views/pages/Perfis/PerfilList.vue')
                 },
                 {
+                    path: '/acl/audit',
+                    name: 'acl-audit',
+                    component: () => import('@/views/pages/Audit/AuditList.vue')
+                },
+                {
                     path: '/acl/modulos',
                     name: 'acl-modulos',
                     component: () => import('@/views/pages/Modulos/ModuloList.vue')
