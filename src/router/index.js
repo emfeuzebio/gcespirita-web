@@ -208,17 +208,18 @@ const router = createRouter({
 router.beforeEach(async (to) => {
     const auth = useAuthStore();
 
+    // Rotas públicas: não força fetchMe; se já carregou, respeita o estado.
+    if (to.meta.public) {
+        if (auth.isAuthenticated && to.name === 'login') return { name: 'dashboard' };
+        return true;
+    }
+
     if (!auth.loaded) {
         try {
             await auth.fetchMe();
         } catch {
             /* sem sessão */
         }
-    }
-
-    if (to.meta.public) {
-        if (auth.isAuthenticated && to.name === 'login') return { name: 'dashboard' };
-        return true;
     }
 
     if (!auth.isAuthenticated) return { name: 'login' };
