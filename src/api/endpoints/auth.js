@@ -10,4 +10,11 @@ export const authApi = {
   me() {
     return http.get('/auth/me');
   },
+  definirSenha(email, token, novaSenha) {
+    return http.post('/auth/definir-senha', {
+      email,
+      token,
+      nova_senha: novaSenha,
+    });
+  },
 };

@@ -95,6 +95,24 @@ async function carregar() {
   }
 }
 
+async function reenviarConvite(item) {
+  confirm.require({
+    message: `Reenviar o convite para "${item.nome}" (${item.email})?`,
+    header: 'Reenviar convite',
+    icon: 'pi pi-envelope',
+    acceptLabel: 'Reenviar',
+    rejectLabel: 'Cancelar',
+    accept: async () => {
+      try {
+        await usuariosApi.reenviarConvite(item.id);
+        toast.add({ severity: 'success', summary: 'Enviado', detail: 'Convite reenviado com sucesso.', life: 3000 });
+      } catch (err) {
+        toast.add({ severity: 'error', summary: 'Erro', detail: err.message, life: 4000 });
+      }
+    },
+  });
+}
+
 function novo() {
   editando.value = null;
   formVisible.value = true;
@@ -213,7 +231,7 @@ onMounted(carregar);
         <div class="text-center py-6 text-muted-color">Nenhum usuário encontrado para o filtro selecionado.</div>
       </template>
 
-      <Column field="id" header="ID" sortable style="width: 2rem" />
+      <Column field="id" header="ID" sortable style="width: 1rem" />
       <Column field="nome" header="Nome" sortable style="width: 18rem" />
       <Column field="email" header="E-mail" sortable />
 
@@ -241,14 +259,20 @@ onMounted(carregar);
         </template>
       </Column>
 
-      <Column field="ativo" header="Ativo" sortable style="width: 4rem">
+      <Column field="ativo" header="Ativo" sortable style="width: 3rem">
         <template #body="{ data }">
           <Tag :severity="data.ativo === 'SIM' ? 'success' : 'danger'" :value="data.ativo" />
         </template>
       </Column>
 
-      <Column header="Ações" style="width: 10rem" :exportable="false">
+      <Column header="Ações" style="width: 13rem" :exportable="false">
         <template #body="{ data }">
+
+          <Button
+            v-if="data.precisa_trocar_senha === 'SIM'"
+            icon="pi pi-envelope" severity="warn" text rounded @click="reenviarConvite(data)" v-tooltip.top="'Reenviar convite por e-mail'"
+          />
+
           <Button icon="pi pi-shield" severity="info" text rounded @click="gerenciarPerfis(data)" v-tooltip.top="'Gerenciar Perfis (ACL)'" />
           <Button icon="pi pi-pencil" severity="secondary" text rounded @click="editar(data)" v-tooltip.top="'Editar o Registro'" />
           <Button icon="pi pi-trash" severity="danger" text rounded @click="confirmarExclusao(data)" v-tooltip.top="'Excluir o Registro'" />

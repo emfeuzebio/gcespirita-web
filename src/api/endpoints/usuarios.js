@@ -17,7 +17,10 @@ export const usuariosApi = {
     return http.delete(`/acl/usuarios/${id}`);
   },
 
-  // Endpoints Master-Detail de Perfis do Usuário
+  reenviarConvite(id) {
+    return http.post(`/acl/usuarios/${id}/reenviar-convite`);
+  },
+
   getPerfis(id) {
     return http.get(`/acl/usuarios/${id}/perfis`);
   },
@@ -26,9 +29,8 @@ export const usuariosApi = {
   },
   desvincularPerfil(usuarioId, perfilId) {
     return http.delete(`/acl/usuarios/${usuarioId}/perfis/${perfilId}`);
-  },  
-  
-  // Lista global de perfis disponíveis no sistema
+  },
+
   listarTodosPerfis() {
     return http.get('/acl/perfis');
   },
