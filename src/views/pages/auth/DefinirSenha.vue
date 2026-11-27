@@ -39,7 +39,7 @@ async function onSubmit() {
     }
 
     try {
-        await authApi.definirSenha(email.value, token.value, novaSenha.value);
+        await authApi.definirSenha(email.value, token.value, novaSenha.value, confirmacao.value);
         successMessage.value = 'Senha definida com sucesso! Redirecionando para o login...';
         setTimeout(() => router.push({ name: 'login' }), 2000);
     } catch (err) {

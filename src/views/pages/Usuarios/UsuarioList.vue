@@ -102,6 +102,8 @@ async function reenviarConvite(item) {
     icon: 'pi pi-envelope',
     acceptLabel: 'Reenviar',
     rejectLabel: 'Cancelar',
+    acceptClass: 'p-button-warn',
+    rejectClass: 'p-button-secondary p-button-text',
     accept: async () => {
       try {
         await usuariosApi.reenviarConvite(item.id);
