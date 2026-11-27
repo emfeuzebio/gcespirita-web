@@ -95,7 +95,7 @@ async function carregar() {
   }
 }
 
-async function reenviarConvite(item) {
+function reenviarConvite(item) {
   confirm.require({
     message: `Reenviar o convite para "${item.nome}" (${item.email})?`,
     header: 'Reenviar convite',
@@ -105,6 +105,8 @@ async function reenviarConvite(item) {
     acceptClass: 'p-button-warn',
     rejectClass: 'p-button-secondary p-button-text',
     accept: async () => {
+      confirm.close();
+      toast.add({ severity: 'info', summary: 'Enviando...', detail: 'Reenviando o convite, aguarde.', life: 2000 });
       try {
         await usuariosApi.reenviarConvite(item.id);
         toast.add({ severity: 'success', summary: 'Enviado', detail: 'Convite reenviado com sucesso.', life: 3000 });
